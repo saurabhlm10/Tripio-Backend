@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const flightSchema = new mongoose.Schema({
+const flightBookingSchema = new mongoose.Schema({
   flightName: {
     type: String,
     require: [true, "flight name is required"],
@@ -27,30 +27,17 @@ const flightSchema = new mongoose.Schema({
     require: [true, "arrival city is required"],
     trim: true,
   },
-  flightStructure: {
-    type: [
-      {
-        seatNumber: {
-          type: String,
-          require: [true, "seatNumber is required"],
-          trim: true,
-        },
-        price: {
-          type: Number,
-          require: [true, "price is required"],
-          trim: true,
-        },
-      },
-    ],
-    require: [true, "flight structure is required"],
+  travellers: {
+    type: [String],
+    require: [true, "travellers is required"],
   },
-  price: {
+  totalPaid: {
     type: Number,
-    require: [true, "price is required"],
+    require: [true, "total paid is required"],
     trim: true,
   },
 });
 
-flightSchema.set("timestamps", true);
+flightBookingSchema.set("timestamps", true);
 
-export default mongoose.model("flight", flightSchema);
+export default mongoose.model("flightbooking", flightBookingSchema);

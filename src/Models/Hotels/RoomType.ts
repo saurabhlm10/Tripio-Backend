@@ -26,7 +26,7 @@ const roomTypeSchema = new mongoose.Schema({
     },
     children: {
       type: Number,
-      require: [true, "Max Adults Allowed Is Required"],
+      require: [true, "Max Children Allowed Is Required"],
     },
   },
   price: {

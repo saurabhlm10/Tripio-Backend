@@ -12,53 +12,55 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userRegister = void 0;
-const User_1 = __importDefault(require("../../../Models/User"));
+exports.sellerRegister = void 0;
+const mongoose_1 = require("mongoose");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const mongoose_1 = require("mongoose");
+const Seller_1 = __importDefault(require("../../../Models/Seller"));
 const responseObject = {
     message: "",
     id: "",
 };
-const userRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const sellerRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        const { name, email, phoneNumber, password } = req.body;
-        if (!(name && email && phoneNumber && password)) {
+        const { companyName, email, password, offerings } = req.body;
+        // Converting incoming text to booleans
+        offerings.hotels = Boolean(offerings.hotels);
+        offerings.flights = Boolean(offerings.flights);
+        if (!(companyName && email && password && offerings)) {
             responseObject.message = "Please fill all the fields";
             return res.status(400).json(responseObject);
         }
-        // Check if user already exists or not
-        const userAlreadyExists = (yield User_1.default.findOne({
+        // Check if seller already exists or not
+        const sellerAlreadyExists = (yield Seller_1.default.findOne({
             email,
         }));
-        if (userAlreadyExists) {
+        if (sellerAlreadyExists) {
             responseObject.message = "This Email Is Already Registered";
-            return res.status(402).json(responseObject);
+            return res.status(401).json(responseObject);
         }
-        // Check if phone number is available
-        const phoneNumberExists = (yield User_1.default.findOne({
-            phoneNumber,
-        }));
-        if (phoneNumberExists) {
-            responseObject.message = "Phone Number is already registered";
-            return res.status(403).json(responseObject);
+        if (!req.file) {
+            responseObject.message = "Please upload a logo";
+            return res.status(401).json(responseObject);
         }
+        const logo = (_a = req.file) === null || _a === void 0 ? void 0 : _a.path;
         // encrypt password
         const myEnPassword = bcryptjs_1.default.hashSync(password, 10);
         // Create a new entry in db
-        const user = (yield User_1.default.create({
-            name,
+        const seller = (yield Seller_1.default.create({
+            companyName,
             email,
-            phoneNumber,
+            logo,
             password: myEnPassword,
+            offerings,
         }));
         // Sign the Token
-        jsonwebtoken_1.default.sign({ userId: user === null || user === void 0 ? void 0 : user._id, email }, process.env.SECRET, { expiresIn: "24h" }, (err, token) => {
+        jsonwebtoken_1.default.sign({ userId: seller === null || seller === void 0 ? void 0 : seller._id, email }, process.env.SECRET, { expiresIn: "24h" }, (err, token) => {
             if (err)
                 throw err;
             responseObject.message = "User registered successfully";
-            responseObject.id = user === null || user === void 0 ? void 0 : user._id;
+            responseObject.id = seller === null || seller === void 0 ? void 0 : seller._id;
             res
                 .cookie("token", token, {
                 expires: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
@@ -82,4 +84,4 @@ const userRegister = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
     }
 });
-exports.userRegister = userRegister;
+exports.sellerRegister = sellerRegister;

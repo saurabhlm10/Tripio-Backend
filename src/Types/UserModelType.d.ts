@@ -4,5 +4,5 @@ interface UserModelType extends Document {
   _id: Types.ObjectId;
   email: string;
   phoneNumber: number;
-  password: string;
+  password: string | undefined;
 }

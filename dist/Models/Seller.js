@@ -19,8 +19,6 @@ const sellerSchema = new mongoose_1.default.Schema({
     password: {
         type: String,
         require: [true, "password is required"],
-        minlength: 8,
-        maxlength: 20,
     },
     logo: {
         type: String,

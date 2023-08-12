@@ -1,24 +1,18 @@
 import { Request, Response } from "express";
-import UserModel from "../../../Models/User";
+import { MongooseError, Types } from "mongoose";
+import { SellerModelType } from "../../../Types/SellerModelType";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { UserModelType } from "../../../Types/UserModelType";
-import { MongooseError, Types } from "mongoose";
+import Seller from "../../../Models/Seller";
 
-/******************************************************
- * @REGISTER
- * @route /api/auth/user/register
- * @description User register Controller for creating new user
- * @parameters
- * @body name, email, phoneNumber, password
- * @returns Token as cookie and id in JSON
- ******************************************************/
-
-interface UserRegisterBody {
-  name: string;
+interface SellerRegisterBody {
+  companyName: string;
   email: string;
-  phoneNumber: number;
   password: string;
+  offerings: {
+    hotels: boolean;
+    flights: boolean;
+  };
 }
 
 interface ResponseObjectType {
@@ -31,56 +25,57 @@ const responseObject: ResponseObjectType = {
   id: "",
 };
 
-export const userRegister = async (req: Request, res: Response) => {
+export const sellerRegister = async (req: Request, res: Response) => {
   try {
-    const { name, email, phoneNumber, password }: UserRegisterBody = req.body;
+    const { companyName, email, password, offerings }: SellerRegisterBody =
+      req.body;
 
-    if (!(name && email && phoneNumber && password)) {
+    // Converting incoming text to booleans
+    offerings.hotels = Boolean(offerings.hotels);
+    offerings.flights = Boolean(offerings.flights);
+
+    if (!(companyName && email && password && offerings)) {
       responseObject.message = "Please fill all the fields";
       return res.status(400).json(responseObject);
     }
 
-    // Check if user already exists or not
-    const userAlreadyExists = (await UserModel.findOne({
+    // Check if seller already exists or not
+    const sellerAlreadyExists = (await Seller.findOne({
       email,
-    })) as UserModelType | null;
-    if (userAlreadyExists) {
+    })) as SellerModelType | null;
+    if (sellerAlreadyExists) {
       responseObject.message = "This Email Is Already Registered";
-
-      return res.status(402).json(responseObject);
+      return res.status(401).json(responseObject);
     }
 
-     // Check if phone number is available
-     const phoneNumberExists = (await UserModel.findOne({
-        phoneNumber,
-      })) as UserModelType;
-  
-      if (phoneNumberExists) {
-        responseObject.message = "Phone Number is already registered";
-  
-        return res.status(403).json(responseObject);
-      }
+    if (!req.file) {
+      responseObject.message = "Please upload a logo";
+      return res.status(401).json(responseObject);
+    }
+
+    const logo = req.file?.path;
 
     // encrypt password
     const myEnPassword: string = bcrypt.hashSync(password, 10);
 
     // Create a new entry in db
-    const user = (await UserModel.create({
-      name,
+    const seller = (await Seller.create({
+      companyName,
       email,
-      phoneNumber,
+      logo,
       password: myEnPassword,
-    })) as UserModelType;
+      offerings,
+    })) as SellerModelType;
 
     // Sign the Token
     jwt.sign(
-      { userId: user?._id, email },
+      { userId: seller?._id, email },
       process.env.SECRET!,
       { expiresIn: "24h" },
       (err, token) => {
         if (err) throw err;
         responseObject.message = "User registered successfully";
-        responseObject.id = user?._id as Types.ObjectId;
+        responseObject.id = seller?._id as Types.ObjectId;
 
         res
           .cookie("token", token, {
